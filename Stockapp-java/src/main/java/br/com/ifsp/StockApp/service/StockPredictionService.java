@@ -17,11 +17,13 @@ public class StockPredictionService {
 
     private HttpClient client;
     private Gson gson;
-    private String urlBase = "http://127.0.0.1:8000/api/v1";
+    private String urlBase;
 
     public StockPredictionService(){
         this.client = HttpClient.newHttpClient();
         this.gson = new Gson();
+        // Usa variável de ambiente ou fallback para localhost (desenvolvimento)
+        this.urlBase = System.getenv().getOrDefault("PYTHON_API_URL", "http://127.0.0.1:8000") + "/api/v1";
     }
 
     public StockPrediction predictionByLr(PredictionRequest predictionRequest) throws IOException, InterruptedException {

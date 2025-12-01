@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  stockapp-database:
+    build:
+      context: ./Stockapp-database
+      dockerfile: Dockerfile
+    container_name: stockapp-database
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=stockapp
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - stockapp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python FastAPI Service
+  stockapp-python:
+    build:
+      context: ./Stockapp-python
+      dockerfile: Dockerfile
+    container_name: stockapp-python
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+    volumes:
+      - ./Stockapp-python/ml_models:/app/ml_models:ro
+    networks:
+      - stockapp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Java Spring Boot Service
+  stockapp-java:
+    build:
+      context: ./Stockapp-java
+      dockerfile: Dockerfile
+    container_name: stockapp-java
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_ADDRESS=0.0.0.0
+      - PYTHON_API_URL=http://stockapp-python:8000
+      - SPRING_DATASOURCE_URL=jdbc:mysql://stockapp-database:3306/stockapp
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+    networks:
+      - stockapp-network
+    depends_on:
+      stockapp-database:
+        condition: service_healthy
+      stockapp-python:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Angular Frontend Service
+  stockapp-angular:
+    build:
+      context: ./Stockapp-angular
+      dockerfile: Dockerfile
+    container_name: stockapp-angular
+    ports:
+      - "80:80"
+    environment:
+      - JAVA_API_URL=http://stockapp-java:8080
+    networks:
+      - stockapp-network
+    depends_on:
+      - stockapp-java
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  stockapp-network:
+    driver: bridge
+
+volumes:
+  ml_models:
+    driver: local
+  mysql_data:
+    driver: local
