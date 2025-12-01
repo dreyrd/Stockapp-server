@@ -11,6 +11,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 
 public class StockPredictionService {
 
@@ -44,8 +45,9 @@ public class StockPredictionService {
                 .POST(HttpRequest.BodyPublishers.ofString(bodyPredictionRequest, StandardCharsets.UTF_8))
                 .build();
 
-        HttpResponse<String> response = this.client.send(request, HttpResponse.BodyHandlers.ofString());
-        String body = response.body();
+        String body = this.client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .join();
 
         StockPredictionDataCreation stockPredictionDataCreation = this.gson.fromJson(body, StockPredictionDataCreation.class);
         StockPrediction stockPrediction = new StockPrediction(stockPredictionDataCreation);
