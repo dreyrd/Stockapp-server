@@ -84,6 +84,7 @@ services:
       - "80:80"
     environment:
       - JAVA_API_URL=http://stockapp-java:8080
+      - POLYGON_API_KEY=CCUAZzThB7vxzPM7OVCgEpr5p9YbZ5qj
     networks:
       - stockapp-network
     depends_on:
