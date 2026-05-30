@@ -117,5 +117,3 @@ Cada serviço pode ser configurado através de variáveis de ambiente no `docker
 
 Todos os containers compartilham a rede `stockapp-network`, permitindo comunicação entre eles usando os nomes dos serviços.
 
-## 📁 Estrutura do Projeto
-
